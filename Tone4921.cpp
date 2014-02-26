@@ -15,16 +15,16 @@ static const float PHASE_SCALE = 1L << PHASE_SHIFT_BITS;
 
 static const int CTL_LOW_GAIN = 0x30;
 static const int CTL_HIGH_GAIN = 0x10;
-static int  ctl = CTL_LOW_GAIN;
+static volatile int  ctl = CTL_LOW_GAIN;
 
-static int timerInitialized = 0;
-static int enabled = 0;
+static volatile int timerInitialized = 0;
+static volatile int enabled = 0;
 
-static int sample_rate = DEFAULT_SAMPLE_RATE;
-static unsigned long phase = 0;
-static unsigned long increment = 2*PHASE_SCALE;
-static int pin;
-static void (*callback)();
+static volatile int sample_rate = DEFAULT_SAMPLE_RATE;
+static volatile unsigned long phase = 0;
+static volatile unsigned long increment = 2*PHASE_SCALE;
+static volatile int pin;
+static void (*volatile callback)();
 
 void initTimer1(int hertz);
 void initSPI();
