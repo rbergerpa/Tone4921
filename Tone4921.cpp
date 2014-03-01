@@ -59,9 +59,6 @@ void Tone4921:: setEnabled(int _enabled) {
   enabled = _enabled;
 
   if (!enabled) {
-    if (!timerInitialized) {
-    }
-  } else {
     phase = 0;
   }
 }
