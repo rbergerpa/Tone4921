@@ -158,8 +158,13 @@ static void initSPI() {
 static void dacWrite(int data) {
   volatile uint8_t *cs_register = portOutputRegister(cs_pin_port);
 
+  uint8_t oldSREG = SREG;
+  cli();   // Disble interrupts
+
   *cs_register &= ~cs_pin_mask;    // Drive CS_PIN low
   SPI.transfer(ctl | (data >> 8)); // Control bits and high 4 bits of data
   SPI.transfer(data & 0xFF);       // Low 8 bits of data
   *cs_register |= cs_pin_mask;    // Drive CS_PIN higth
+
+  SREG = oldSREG;   // Restore interrupts to previous state
 }
