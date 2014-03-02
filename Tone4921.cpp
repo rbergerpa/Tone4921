@@ -4,6 +4,9 @@
 #include <SPI.h>
 #include <avr/io.h>
 
+static const int CS_PIN = 9;
+const int CS_PIN_MASK = PORTB1;
+
 static const int DEFAULT_SAMPLE_RATE = 16000;
 
 static const int SLAVE_SELECT = 20;
@@ -23,18 +26,17 @@ static volatile int enabled = 0;
 static volatile int sample_rate = DEFAULT_SAMPLE_RATE;
 static volatile unsigned long phase = 0;
 static volatile unsigned long increment = 2*PHASE_SCALE;
-static volatile int pin;
 static void (*volatile callback)();
 
 void initTimer1(int hertz);
 void initSPI();
+void dacWrite(int value);
 
-Tone4921::Tone4921(int _pin) {
-  Tone4921::Tone4921(_pin, DEFAULT_SAMPLE_RATE);
+Tone4921::Tone4921() {
+  Tone4921::Tone4921(DEFAULT_SAMPLE_RATE);
 }
 
-Tone4921::Tone4921(int _pin, int _sample_rate) {
-  pin = _pin;
+Tone4921::Tone4921(int _sample_rate) {
   sample_rate = _sample_rate;
 }
 
@@ -60,21 +62,20 @@ void Tone4921:: setEnabled(int _enabled) {
 
   if (!enabled) {
     phase = 0;
+    dacWrite(AMPLITUDE);
   }
 }
 
  // Interrupt handler
 ISR(TIMER1_COMPA_vect)
 {
-  digitalWrite(pin, LOW);
-
   int p = phase >> PHASE_SHIFT_BITS;
   
   int quadrant = (p >> QUADRANT_BITS) & 3;
   int offset = p & MASK;
     
   unsigned int data = 0;
-  
+
   switch (quadrant) {
     case 0:
       data = AMPLITUDE + SIN_TABLE[offset];
@@ -90,13 +91,11 @@ ISR(TIMER1_COMPA_vect)
       break;
   }
 
-  SPI.transfer(ctl | (data >> 8)); // Control bits and high 4 bits of data
-  SPI.transfer(data & 0xFF);       // Low 8 bits of data
+  dacWrite(data);
 
   if (enabled) {
     phase += increment;
   }
-  digitalWrite(pin, HIGH);
 
   if (callback) {
       (*callback)();
@@ -127,8 +126,17 @@ void initTimer1(int hertz) {
 }
 
 void initSPI() {
-  pinMode(pin, OUTPUT);
+  pinMode(CS_PIN, OUTPUT);
+  PORTB |= _BV(CS_PIN_MASK);   //  Drive CS_PIN high
+
   pinMode(SLAVE_SELECT, OUTPUT);
   SPI.begin();
   SPI.setDataMode(SPI_MODE0);
+}
+
+void dacWrite(int data) {
+  PORTB &= ~_BV(CS_PIN_MASK);   // Drive CS_PIN low
+  SPI.transfer(ctl | (data >> 8)); // Control bits and high 4 bits of data
+  SPI.transfer(data & 0xFF);       // Low 8 bits of data
+  PORTB |= _BV(CS_PIN_MASK);   //  Drive CS_PIN high
 }

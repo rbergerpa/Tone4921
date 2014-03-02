@@ -3,8 +3,8 @@
 
 class Tone4921 {
  public:
-  Tone4921(int _pin);
-  Tone4921(int _pin, int _sample_rate);
+  Tone4921();
+  Tone4921(int _sample_rate);
 
   void start();
   void setFrequency(int hertz);
