@@ -28,9 +28,10 @@ static volatile unsigned long phase = 0;
 static volatile unsigned long increment = 2*PHASE_SCALE;
 static void (*volatile callback)();
 
-void initTimer1(int hertz);
-void initSPI();
-void dacWrite(int value);
+static void startTimer1(int hertz);
+static void stopTimer1();
+static void initSPI();
+static void dacWrite(int value);
 
 Tone4921::Tone4921() {
   Tone4921::Tone4921(DEFAULT_SAMPLE_RATE);
@@ -42,8 +43,13 @@ Tone4921::Tone4921(int _sample_rate) {
 
 void Tone4921::start() {
   initSPI();
-  initTimer1(sample_rate);
+  startTimer1(sample_rate);
 }
+
+void Tone4921::stop() {
+  stopTimer1();
+}
+
 
 void Tone4921::setGain(int gain) {
   if (gain == 2) {
@@ -107,7 +113,7 @@ void Tone4921::setCallback(void (*_callback)()) {
 }
 
 // Set up timer1 to trigger an interrupt with the given period in milliseconds
-void initTimer1(int hertz) {                
+static void startTimer1(int hertz) {                
   cli();   // disable global interrupts
 
   TCCR1A = 0;
@@ -120,12 +126,17 @@ void initTimer1(int hertz) {
   int divisor = F_CPU / hertz - 1;
   
   OCR1A = divisor;
-  TIMSK1 |= (1 << OCIE1A); // enable Timer1 intterupt
+  TIMSK1 |= (1 << OCIE1A); // enable Timer1 interrupt
  
   sei();   // enable global interrupts
 }
 
-void initSPI() {
+static void stopTimer1() {
+  TIMSK1 &= ~(1 << OCIE1A); // disable Timer1 interrupt
+  TCCR1B = 0;
+}
+
+static void initSPI() {
   pinMode(CS_PIN, OUTPUT);
   PORTB |= _BV(CS_PIN_MASK);   //  Drive CS_PIN high
 
@@ -134,9 +145,12 @@ void initSPI() {
   SPI.setDataMode(SPI_MODE0);
 }
 
-void dacWrite(int data) {
+static void dacWrite(int data) {
   PORTB &= ~_BV(CS_PIN_MASK);   // Drive CS_PIN low
   SPI.transfer(ctl | (data >> 8)); // Control bits and high 4 bits of data
   SPI.transfer(data & 0xFF);       // Low 8 bits of data
   PORTB |= _BV(CS_PIN_MASK);   //  Drive CS_PIN high
 }
+
+
+

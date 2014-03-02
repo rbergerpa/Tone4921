@@ -7,6 +7,7 @@ class Tone4921 {
   Tone4921(int _sample_rate);
 
   void start();
+  void stop();
   void setFrequency(int hertz);
   void setGain(int gain);
   void setEnabled(int enabled);
