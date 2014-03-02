@@ -28,16 +28,22 @@ static volatile unsigned long phase = 0;
 static volatile unsigned long increment = 2*PHASE_SCALE;
 static void (*volatile callback)();
 
+static volatile int8_t cs_pin_port;
+static volatile int8_t cs_pin_mask;
+
 static void startTimer1(int hertz);
 static void stopTimer1();
 static void initSPI();
 static void dacWrite(int value);
 
-Tone4921::Tone4921() {
-  Tone4921::Tone4921(DEFAULT_SAMPLE_RATE);
+Tone4921::Tone4921(int pin) {
+  Tone4921::Tone4921(pin, DEFAULT_SAMPLE_RATE);
 }
 
-Tone4921::Tone4921(int _sample_rate) {
+Tone4921::Tone4921(int pin, int _sample_rate) {
+  cs_pin_port = digitalPinToPort(pin);
+  cs_pin_mask =   digitalPinToBitMask(pin);
+
   sample_rate = _sample_rate;
 }
 
@@ -150,8 +156,10 @@ static void initSPI() {
 }
 
 static void dacWrite(int data) {
-  PORTB &= ~_BV(CS_PIN_MASK);   // Drive CS_PIN low
+  volatile uint8_t *cs_register = portOutputRegister(cs_pin_port);
+
+  *cs_register &= ~cs_pin_mask;    // Drive CS_PIN low
   SPI.transfer(ctl | (data >> 8)); // Control bits and high 4 bits of data
   SPI.transfer(data & 0xFF);       // Low 8 bits of data
-  PORTB |= _BV(CS_PIN_MASK);   //  Drive CS_PIN high
+  *cs_register |= cs_pin_mask;    // Drive CS_PIN higth
 }
