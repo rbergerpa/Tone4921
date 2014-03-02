@@ -72,7 +72,7 @@ void Tone4921:: setEnabled(int _enabled) {
   }
 }
 
- // Interrupt handler
+// Interrupt handler
 ISR(TIMER1_COMPA_vect)
 {
   int p = phase >> PHASE_SHIFT_BITS;
@@ -132,8 +132,12 @@ static void startTimer1(int hertz) {
 }
 
 static void stopTimer1() {
+  cli();   // disable global interrupts
+
   TIMSK1 &= ~(1 << OCIE1A); // disable Timer1 interrupt
   TCCR1B = 0;
+
+  sei();   // enable global interrupts
 }
 
 static void initSPI() {
@@ -151,6 +155,3 @@ static void dacWrite(int data) {
   SPI.transfer(data & 0xFF);       // Low 8 bits of data
   PORTB |= _BV(CS_PIN_MASK);   //  Drive CS_PIN high
 }
-
-
-
