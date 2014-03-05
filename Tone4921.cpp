@@ -42,7 +42,7 @@ Tone4921::Tone4921(int pin) {
 
 Tone4921::Tone4921(int pin, int _sample_rate) {
   cs_pin_port = digitalPinToPort(pin);
-  cs_pin_mask =   digitalPinToBitMask(pin);
+  cs_pin_mask = digitalPinToBitMask(pin);
 
   sample_rate = _sample_rate;
 }
@@ -161,7 +161,7 @@ static void dacWrite(int data) {
   uint8_t oldSREG = SREG;
   cli();   // Disble interrupts
 
-  *cs_register &= ~cs_pin_mask;    // Drive CS_PIN low
+  *cs_register &= ~cs_pin_mask;     // Drive CS_PIN low
   SPI.transfer(ctl | (data >> 8)); // Control bits and high 4 bits of data
   SPI.transfer(data & 0xFF);       // Low 8 bits of data
   *cs_register |= cs_pin_mask;    // Drive CS_PIN higth
